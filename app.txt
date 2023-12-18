@@ -1,0 +1,149 @@
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, TextInput, Button, Text } from 'react-native';
+import { GiftedChat } from 'react-native-gifted-chat';
+import { v4 as uuidv4 } from 'uuid';
+import firebase from 'firebase/compat/app';
+import 'firebase/compat/firestore';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCR8YftV3NFxj4EOWK9CUg7qyBYUIQDJxw",
+  authDomain: "chatwell-f6d64.firebaseapp.com",
+  databaseURL: "https://chatwell-f6d64-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "chatwell-f6d64",
+  storageBucket: "chatwell-f6d64.appspot.com",
+  messagingSenderId: "840890098692",
+  appId: "1:840890098692:web:2964f92d61f78f2c5f4151",
+  measurementId: "G-HFFK6220FT"
+};
+
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
+
+const db = firebase.firestore();
+
+export default function ChatScreen() {
+  const [messages, setMessages] = useState([]);
+  const [userName, setUserName] = useState('');
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    if (user) {
+      const unsubscribe = db
+        .collection('messages')
+        .orderBy('createdAt', 'desc')
+        .onSnapshot((querySnapshot) => {
+          const newMessages = querySnapshot.docs.map((doc) => {
+            const data = doc.data();
+            return {
+              _id: doc.id,
+              text: data.text || '', // Ensure text is not null
+              createdAt: data.createdAt ? data.createdAt.toDate() : new Date(), // Handle potential null createdAt
+              user: data.user || {}, // Ensure user is not null
+            };
+          });
+          setMessages(newMessages);
+        });
+  
+      return () => unsubscribe();
+    }
+  }, [user]);
+
+  const renderHeader = () => {
+    return (
+      <View style={styles.header}>
+        <Text style={styles.appName}>ChatWell</Text>
+        {/* Add your app logo component here */}
+      </View>
+    );
+  };
+
+  const handleStartChat = () => {
+    if (userName.trim() !== '') {
+      const userId = uuidv4();
+      setUser({ _id: userId, name: userName });
+    } else {
+      Alert.alert('Please fill in your name to start the chat.');
+    }
+  };
+
+  const onSend = (newMessages = []) => {
+    newMessages.forEach((message) => {
+      db.collection('messages').add({
+        text: message.text,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        user: message.user,
+      });
+    });
+  };
+
+  const renderUserNameInput = () => {
+    return (
+      <View style={styles.container}>
+        <TextInput
+          style={styles.input}
+          placeholder="Enter your name"
+          onChangeText={(text) => setUserName(text)}
+        />
+        <Button title="Start Chat" onPress={handleStartChat} />
+      </View>
+    );
+  };
+
+  return (
+    <View style={styles.container}>
+      {renderHeader()}
+      {user ? (
+        <GiftedChat
+          messages={messages}
+          onSend={(newMessages) => onSend(newMessages)}
+          user={user}
+        />
+      ) : (
+        renderUserNameInput()
+      )}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    backgroundColor: '#f5f5f5',
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+  },
+  appName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  typingBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderTopWidth: 1,
+    borderTopColor: '#ccc',
+  },
+  input: {
+    flex: 1,
+    height: 40,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    marginRight: 10,
+  },
+  backButton: {
+    alignSelf: 'flex-start',
+    marginTop: 10,
+  },
+});
