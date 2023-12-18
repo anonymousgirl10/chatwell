@@ -5,7 +5,7 @@
   "scripts": {
     "start": "expo start",
     "predeploy": "npx expo export:web",
-    "deploy": "gh-pages -b your-desired-branch -d web-build",
+    "deploy": "gh-pages -b gh-pages -d web-build",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web"
@@ -29,7 +29,8 @@
     "react-native-web": "~0.19.6"
   },
   "devDependencies": {
-    "@babel/core": "^7.20.0"
+    "@babel/core": "^7.20.0",
+    "gh-pages": "^6.1.0"
   },
   "private": true
 }
